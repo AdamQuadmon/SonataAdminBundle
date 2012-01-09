@@ -33,6 +33,8 @@ class PathInfoBuilder implements RouteBuilderInterface
     public function build(AdminInterface $admin, RouteCollection $collection)
     {
         $collection->add('list');
+        // ADDED
+        $collection->add('import');
         $collection->add('create');
         $collection->add('batch');
         $collection->add('edit', $admin->getRouterIdParameter().'/edit');

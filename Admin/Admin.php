@@ -42,8 +42,111 @@ use Knp\Menu\FactoryInterface as MenuFactoryInterface;
 use Knp\Menu\ItemInterface as MenuItemInterface;
 use Knp\Menu\MenuItem;
 
+// ADDED
+use Sonata\AdminBundle\Export\ImportMapper;
+use Sonata\AdminBundle\Builder\ImportBuilderInterface;
+
 abstract class Admin implements AdminInterface, DomainObjectInterface
 {
+    
+    // START ADDING
+    /**
+     * The import FieldDescription constructed from the configureImportField method
+     *
+     * @var array
+     */
+    protected $importFieldDescriptions = array();
+
+    /**
+     * The related list builder
+     *
+     * @var \Sonata\AdminBundle\Builder\ImportBuilderInterface
+     */
+    protected $importBuilder;
+
+    /**
+     * overwrite this method to configure the import FormField definition
+     *
+     * @param \Sonata\AdminBundle\Export\ImportMapper $list
+     * @return void
+     */
+    protected function configureImportFields(ImportMapper $import)
+    {
+
+    }
+
+    /**
+     * build the import FieldDescription array
+     *
+     * @return void
+     */
+    protected function buildImport()
+    {
+        if ($this->import) {
+            return;
+        }
+
+        // HERE's A PROBLEM: call method getBaseList() on a non object
+        $this->import = $this->getImportBuilder()->getBaseList();
+
+        $mapper = new ImportMapper($this->getImportBuilder(), $this->import, $this);
+
+        if (count($this->getBatchActions()) > 0) {
+            $fieldDescription = $this->getModelManager()->getNewFieldDescriptionInstance($this->getClass(), 'batch', array(
+                'label'    => 'batch',
+                'code'     => '_batch',
+                'sortable' => false
+            ));
+
+            $fieldDescription->setAdmin($this);
+            $fieldDescription->setTemplate('SonataAdminBundle:CRUD:import__batch.html.twig');
+
+            $mapper->add($fieldDescription, 'batch');
+        }
+
+        $this->configureImportFields($mapper);
+
+        foreach($this->extensions as $extension) {
+            $extension->configureImportFields($mapper);
+        }
+    }
+
+    /**
+     * Returns the import template
+     *
+     * @return string the import template
+     */
+    public function getImportTemplate()
+    {
+        return $this->getTemplate('import');
+    }
+
+    /**
+     * The import collection
+     *
+     * @var array
+     */
+    private $import;
+
+    /**
+     * @param \Sonata\AdminBundle\Builder\ImportBuilderInterface $importBuilder
+     * @return void
+     */
+    public function setImportBuilder(ImportBuilderInterface $importBuilder)
+    {
+        $this->importBuilder = $importBuilder;
+    }
+
+    /**
+     * @return \Sonata\AdminBundle\Builder\ImportBuilderInterface
+     */
+    public function getImportBuilder()
+    {
+        return $this->importBuilder;
+    }
+    
+    // END ADDING
+    
     /**
      * The class name managed by the admin class
      *
@@ -1003,16 +1106,6 @@ abstract class Admin implements AdminInterface, DomainObjectInterface
     public function setTemplates(array $templates)
     {
         $this->templates = $templates;
-    }
-
-    /**
-     * @param $name
-     * @param $template
-     * @return void
-     */
-    public function setTemplate($name, $template)
-    {
-        $this->templates[$name] = $template;
     }
 
     /**

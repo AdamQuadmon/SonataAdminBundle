@@ -154,6 +154,31 @@ class CRUDController extends Controller
         ));
     }
 
+    // ADDED
+    /**
+     * return the Response object associated to the import action
+     *
+     * @return Response
+     */
+    public function importAction()
+    {
+        if (false === $this->admin->isGranted('CREATE')) {
+            throw new AccessDeniedException();
+        }
+
+        $datagrid = $this->admin->getDatagrid();
+        $formView = $datagrid->getForm()->createView();
+
+        // set the theme for the current Admin Form
+        $this->get('twig')->getExtension('form')->setTheme($formView, $this->admin->getFilterTheme());
+
+        return $this->render($this->admin->getImportTemplate(), array(
+            'action'   => 'import',
+            'form'     => $formView,
+            'datagrid' => $datagrid
+        ));
+    }
+    
     /**
      * execute a batch delete
      *
